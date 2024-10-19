@@ -16,7 +16,7 @@ static int	heredoc(t_mini *ms, const char *eof, char **env)
 			break ;
 		}
 		if (*eof != '\'' && *eof != '\"' && ft_strchr(input, '$'))
-			input = ft_expand(ms, input, env);
+			input = ft_expander(ms, input, env);
 		write(file, input, ft_strlen(input));
 		write(file, "\n", 1);
 		input = free_ptr(input);

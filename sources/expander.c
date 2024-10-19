@@ -1,102 +1,98 @@
 #include "minishell.h"
 
-static t_expand	init_expansion(t_mini *ms, char *cmd, char **envp, t_expand exp)
+char	*get_exitstatus(t_mini *ms, char *var, char *cmd)
 {
-	while (cmd[++exp.end])
+	char	*ret;
+
+	ret = NULL;
+	if (!*cmd)
 	{
-		exp.quotes = check_quotes(cmd[exp.end], exp.quotes);
-		if (cmd[exp.end] == '$' && exp.quotes != 2)
-		{
-			exp.hold_str[exp.ex++] = ft_substr(cmd, exp.start, exp.end - \
-			exp.start);
-			exp.start = exp.end;
-		}
-		else if (cmd[exp.start] == '$' && cmd[exp.end] != '{' && \
-		!ft_isalnum(cmd[exp.end]) && cmd[exp.end] != '?' \
-		&& cmd[exp.end] != '_')
-		{
-			exp.hold_str[exp.ex++] = get_envp(ms, ft_substr(cmd, exp.start, \
-			exp.end - exp.start), envp);
-			if (cmd[exp.end] == '}' && cmd[exp.start + 1] == '{' \
-			&& cmd[exp.end + 1])
-				exp.end++;
-			exp.start = exp.end;
-		}
+		var = free_ptr(var);
+		return (ft_strdup("$"));
 	}
-	return (exp);
+	if (cmd && cmd[0])
+		ret = ft_strdup(++cmd);
+	var = free_ptr(var);
+	return (ft_strjoinn(ft_itoaa(ms->error), ret));
 }
 
-char	*ft_expand(t_mini *ms, char *cmd, char **envp)
+char	*get_env(t_mini *ms, char *cmd, char **env)
 {
-	t_expand	exp;
+	char	*tmp;
+	int		len;
+	int		var_len;
 
-	ft_bzero (&exp, sizeof(t_expand));
-	while (cmd[exp.i])
-		exp.ex_n += 1 * (cmd[exp.i++] == '$');
-	exp.ex = (exp.ex_n * 2) + 2;
-	exp.hold_str = ft_calloc(exp.ex, sizeof(char *));
-	if (!exp.hold_str)
-		return (NULL);
-	exp.ex = 0;
-	exp.end = -1;
-	exp = init_expansion (ms, cmd, envp, exp);
-	if (cmd[exp.start] == '$')
-		exp.hold_str[exp.ex++] = get_envp(ms, ft_substr(cmd, exp.start, \
-		exp.end - exp.start), envp);
+	tmp = cmd;
+	cmd++;
+	if (*cmd == '{')
+		len = ft_strlen(++cmd);
 	else
-		exp.hold_str[exp.ex++] = ft_substr(cmd, exp.start, exp.end - exp.start);
-	return (ft_array_copy(exp.hold_str));
-}
-
-static char	*expand_quotes(char *cmd)
-{
-	int		i;
-	int		quotes;
-	char	**ret;
-
-	i = -1;
-	quotes = 0;
-	while (cmd[++i])
+		len = ft_strlen(cmd);
+	if (*cmd == '?' || len == 0)
+		return (get_exitstatus(ms, tmp, cmd));
+	while (*env)
 	{
-		quotes = check_quotes(cmd[i], quotes);
-		if ((cmd[i] == '\'' || cmd[i] == '\"') && !quotes)
-			cmd[i] = SEP;
-		else if ((cmd[i] == '\'' && quotes == 2) || \
-		(cmd[i] == '\"' && quotes == 1))
-			cmd[i] = SEP;
-	}
-	ret = ft_split(cmd, SEP);
-	if (!*ret)
-	{
-		ret = free_array(ret);
-		return (ft_strdup(""));
-	}
-	return (ft_array_copy(ret));
-}
-
-void	ft_expander(t_mini *ms, t_token **head, char **envp)
-{
-	char	*temp;
-	t_token	*token;
-
-	token = *head;
-	while (token)
-	{
-		if (ft_strchr(token->cmd, '$'))
+		var_len = equalsign(*env);
+		if (!ft_strncmp(cmd, *env, var_len))
 		{
-			temp = token->cmd;
-			token->cmd = ft_expand(ms, token->cmd, envp);
-			if (token->cmd == NULL)
-				token->cmd = temp;
+			tmp = free_ptr(tmp);
+			return (ft_strdup(*env + len + 1));
+		}
+		env++;
+	}
+	tmp = free_ptr(tmp);
+	return (ft_strdup(""));
+}
+
+/*
+	Vamos contar quantas vezes vamos expandir para nao haver problemas 
+	de memoria caso usamos aspas etc.
+	No geral isto so vai fazer as verificacoes e expandir os $.
+*/
+char	*ft_expander(t_mini *ms, char *cmd, char **env)
+{
+	t_expander	ex;
+
+	ft_bzero(&ex, sizeof(t_expander));
+	while (cmd[ex.i]) 
+	{
+		if (cmd[ex.i++] == '$')
+			ex.ex_n++;
+	}
+	ex.ex = (ex.ex_n * 2) + 2;
+	ex.newcmd = ft_calloc(ex.ex, sizeof(char *));
+	if (!ex.newcmd)
+		return (NULL);
+	ex.ex = 0;
+	ex.end = -1;
+	ex = init_ex(ms, cmd, env, ex);
+	if (cmd[ex.start] == '$')
+		ex.newcmd[ex.ex++] = get_env(ms, ft_substr(cmd, ex.start, \
+		ex.end - ex.start), env);
+	else
+		ex.newcmd[ex.ex++] = ft_substr(cmd, ex.start, ex.end - ex.start);
+	return (ft_array_copy(ex.newcmd));
+}
+
+void	ft_expand(t_mini *ms, t_token **top, char **env)
+{
+	t_token	*sub;
+	char	*tmp;
+
+	sub = *top;
+	while (sub)
+	{
+		if (ft_strchr(sub->cmd, '$'))
+		{
+			tmp = sub->cmd;
+			sub->cmd = ft_expander(ms, sub->cmd, env);
+			if (sub->cmd == NULL)
+				sub->cmd = tmp;
 			else
-				temp = free_ptr(temp);
+				tmp = free_ptr(tmp);
 		}
-		if (!token->prev || (token->prev && token->prev->type != HEREDOC))
-		{
-			temp = token->cmd;
-			token->cmd = expand_quotes(token->cmd);
-			temp = free_ptr(temp);
-		}
-		token = token->next;
+		if ((sub->prev && sub->prev->type != HEREDOC) || !sub->prev)
+			sub->cmd = quote_expander(sub->cmd);
+		sub = sub->next;
 	}
 }

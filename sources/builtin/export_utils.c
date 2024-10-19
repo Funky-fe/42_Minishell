@@ -2,11 +2,11 @@
 
 void	swap(char **a, char **b)
 {
-	char	*temp;
+	char	*tmp;
 
-	temp = *a;
+	tmp = *a;
 	*a = *b;
-	*b = temp;
+	*b = tmp;
 }
 
 void	sort_env(char **env_copy, int count)

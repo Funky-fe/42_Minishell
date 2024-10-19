@@ -1,19 +1,70 @@
 #include "minishell.h"
 
+char	*ft_array_copy(char **array)
+{
+	char	*new;
+	char	*tmp;
+	int		i;
+
+	i = 0;
+	new = ft_strdup(array[0]);
+	while (array[++i])
+	{
+		tmp = new;
+		new = ft_strjoin(tmp, array[i]);
+		tmp = free_ptr(tmp);
+	}
+	array = free_array(array);
+	return (new);
+}
+
+char	**ft_arraydup(char **array)
+{
+	char	**tmp;
+	size_t	i;
+
+	i = 0;
+	if (!array)
+		return (NULL);
+	while (array[i])
+		i++;
+	tmp = ft_calloc (i + 1, sizeof (char *));
+	i = 0;
+	if (!tmp)
+		return (NULL);
+	while (array[i])
+	{
+		tmp[i] = ft_strdup (array[i]);
+		i++;
+	}
+	tmp[i] = NULL;
+	return (tmp);
+}
+
+void	ft_sa_handler(int sig, siginfo_t *sa, void *info)
+{
+	(void) info;
+	ft_printf ("\n");
+	if (sig == SIGINT && sa->si_pid)
+	{
+		rl_on_new_line ();
+		rl_replace_line ("", 0);
+		rl_redisplay ();
+	}
+}
+
 void	ft_end(t_mini *ms, const char *message, const int exitnumber)
 {
 	int	i;
 
-	if (exitnumber && exitnumber != 127)
-		ft_putstr_fd (ERROR_MSG, 2);
 	if (message)
-		ft_putendl_fd ((char *) message, 2);
+		ft_printf("%s", message);
 	if (!exitnumber && !message)
-		ft_putendl_fd (EXIT_MSG, 1);
-	ms->input = free_ptr (ms -> input);
-	ms->token = free_token (ms -> token);
-	ms->env = free_array (ms -> env);
-	rl_clear_history ();
+		ft_printf("exit\n");
+	ms->input = free_ptr(ms -> input);
+	ms->token = free_token(ms -> token);
+	ms->env = free_array(ms -> env);
+	rl_clear_history();
 	unlink("__heredoc");
 	i = 0;
 	while (!close(i))
@@ -21,62 +72,29 @@ void	ft_end(t_mini *ms, const char *message, const int exitnumber)
 	exit(exitnumber);
 }
 
-int	check_quotes(char c, int quotes)
+char	**token_to_array(t_token *token)
 {
-	if (c == '\'')
+	int		counter;
+	int		k;
+	char	**result;
+	t_token	*tmp;
+
+	tmp = token;
+	counter = 0;
+	k = -1;
+	while (tmp && tmp->type != PIPE)
 	{
-		if (quotes == 2)
-			return (0);
-		else if (!quotes)
-			return (2);
+		counter++;
+		tmp = tmp->next;
 	}
-	else if (c == '\"')
-	{
-		if (quotes == 1)
-			return (0);
-		else if (!quotes)
-			return (1);
-	}
-	return (quotes);
-}
-
-char	*ft_array_copy(char **array)
-{
-	char	*str;
-	char	*temp;
-	int		i;
-
-	str = ft_strdup(array[0]);
-	i = 0;
-	while (array[++i])
-	{
-		temp = str;
-		str = ft_strjoin(temp, array[i]);
-		temp = free_ptr(temp);
-	}
-	array = free_array(array);
-	return (str);
-}
-
-char	**ft_arraydup(char **array)
-{
-	char	**temp;
-	size_t	i;
-
-	if (!array)
+	result = ft_calloc((counter + 1), sizeof(char *));
+	if (!result)
 		return (NULL);
-	i = 0;
-	while (array[i])
-		i++;
-	temp = ft_calloc (i + 1, sizeof (char *));
-	if (!temp)
-		return (NULL);
-	i = 0;
-	while (array[i])
+	while (++k < counter)
 	{
-		temp[i] = ft_strdup (array[i]);
-		i++;
+		result[k] = ft_strdup(token->cmd);
+		token = token->next;
 	}
-	temp[i] = NULL;
-	return (temp);
+	result[k] = NULL;
+	return (result);
 }

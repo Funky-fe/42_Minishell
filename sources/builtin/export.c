@@ -4,7 +4,7 @@ int	get_var_pos(char *var, char **env)
 {
 	int		position;
 	int		len;
-	char	*var_temp;
+	char	*var_tmp;
 
 	if (ft_strchr (var, '='))
 	{
@@ -13,28 +13,28 @@ int	get_var_pos(char *var, char **env)
 	len = ft_strchr (var, '=') - var;
 	if (!len)
 		len = ft_strlen (var);
-	var_temp = ft_calloc (len + 2, sizeof (char));
+	var_tmp = ft_calloc (len + 2, sizeof (char));
 	position = 0;
-	ft_strlcpy (var_temp, var, len + 2);
-	var_temp[len] = '\0';
-	while (env[position] && ft_strncmp (env[position], var_temp, len + 1))
+	ft_strlcpy (var_tmp, var, len + 2);
+	var_tmp[len] = '\0';
+	while (env[position] && ft_strncmp (env[position], var_tmp, len + 1))
 		position++;
-	var_temp = free_ptr (var_temp);
+	var_tmp = free_ptr (var_tmp);
 	return (position);
 }
 
 void	update_var(char *var, int var_pos, char ***env)
 {
-	char	**temp;
+	char	**tmp;
 
 	if (!env[0][var_pos])
 	{
-		temp = ft_calloc (var_pos + 2, sizeof (char *));
-		temp[var_pos] = ft_strdup (var);
+		tmp = ft_calloc (var_pos + 2, sizeof (char *));
+		tmp[var_pos] = ft_strdup (var);
 		while (var_pos--)
-			temp[var_pos] = ft_strdup (env[0][var_pos]);
+			tmp[var_pos] = ft_strdup (env[0][var_pos]);
 		*env = free_array (*env);
-		*env = temp;
+		*env = tmp;
 	}
 	else
 	{

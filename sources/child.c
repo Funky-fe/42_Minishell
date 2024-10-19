@@ -55,28 +55,28 @@ void	file_error_message(t_mini *ms, char *cmd)
 
 void	handle_invalid_file(t_mini *ms)
 {
-	t_token	*temp;
+	t_token	*tmp;
 
-	temp = ms->token;
-	while (temp)
+	tmp = ms->token;
+	while (tmp)
 	{
-		if (temp->type == HEREDOC)
+		if (tmp->type == HEREDOC)
 			ms->error = 0;
-		if (temp->type == ARG_FILE)
+		if (tmp->type == ARG_FILE)
 		{
-			if (access(temp->cmd, F_OK))
+			if (access(tmp->cmd, F_OK))
 			{
-				file_error_message(ms, temp->cmd);
+				file_error_message(ms, tmp->cmd);
 				ft_putstr_fd(": No such file or directory\n", 2);
 			}
-			else if (access(temp->cmd, R_OK) || access(temp->cmd, W_OK))
+			else if (access(tmp->cmd, R_OK) || access(tmp->cmd, W_OK))
 			{
-				file_error_message(ms, temp->cmd);
+				file_error_message(ms, tmp->cmd);
 				ft_putstr_fd(": Permission Denied\n", 2);
 				ms -> error = 1;
 			}
 		}
-		temp = temp->next;
+		tmp = tmp->next;
 	}
 }
 

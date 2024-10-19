@@ -1,17 +1,17 @@
 NAME		= minishell
 LIBFT_DIR	= libft/
 LIBFT		= ${LIBFT_DIR}libft.a
-SRC			= main.c utils.c free.c \
+SRC			= main.c utils.c cleaner.c \
 			  lexer.c \
 			  parser.c parser_utils.c \
 			  syntax_checker.c \
 			  expander.c expander_utils.c\
-			  executor.c executor_utils.c\
+			  executor.c \
 			  child.c \
 			  path.c \
 			  redirect.c redirect_utils.c \
 			  builtins.c echo.c cd.c pwd.c export.c unset.c env.c exit.c \
-			  export_utils.c
+			  export_utils.c quotes.c initializers.c
 OBJ_DIR		= objects/
 OBJ			= ${addprefix ${OBJ_DIR}, ${SRC:%.c=%.o}}
 VPATH		= sources sources/builtin

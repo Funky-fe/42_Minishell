@@ -1,18 +1,18 @@
 #include "minishell.h"
 
-static char	*set_right_path(char *cmd, char **paths)
+char	*set_right_path(char *cmd, char **paths)
 {
 	int		i;
 	char	*ret;
-	char	*temp;
+	char	*tmp;
 
 	i = -1;
 	ret = NULL;
 	while (paths && paths[++i])
 	{
-		temp = ft_strjoin(paths[i], "/");
-		ret = ft_strjoin(temp, cmd);
-		temp = free_ptr(temp);
+		tmp = ft_strjoin(paths[i], "/");
+		ret = ft_strjoin(tmp, cmd);
+		tmp = free_ptr(tmp);
 		if ((!access(ret, F_OK)) && !access(ret, X_OK))
 			break ;
 		ret = free_ptr(ret);
@@ -20,13 +20,19 @@ static char	*set_right_path(char *cmd, char **paths)
 	return (ret);
 }
 
+/*
+	We are going to check if the command is a path or not.
+	If it is, we are going to return the path of the command. 
+	If it is not a path, we are going to check if the command is in the PATH environment variable.
+	If it is not, we are going to return NULL.
+*/ 
 char	*find_path(char	*cmd, char **env)
 {
 	int		i;
 	char	**paths;
 	char	*rigth_path;
 
-	if (cmd[0] == '/' || cmd[0] == '.')
+	if (cmd[0] == '.' || cmd[0] == '/')
 	{
 		if ((!access(cmd, F_OK)) && !access(cmd, X_OK) \
 		&& ft_strlen(cmd) > 2)

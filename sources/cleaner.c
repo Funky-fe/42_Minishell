@@ -24,14 +24,34 @@ char	**free_array(char **array)
 
 t_token	*free_token(t_token *token)
 {
-	t_token	*temp;
+	t_token	*tmp;
 
 	while (token)
 	{
-		temp = token;
+		tmp = token;
 		token -> cmd = free_ptr (token -> cmd);
 		token = token -> next;
-		free (temp);
+		free (tmp);
 	}
 	return (NULL);
+}
+
+void	ft_cleaner(t_mini *ms)
+{
+	ms->input = free_ptr(ms->input);
+	ms->token = free_token(ms->token);
+	unlink("__heredoc");
+}
+
+void	close_fds(int **fd)
+{
+	int	i;
+
+	i = 0;
+	while (fd[i])
+	{
+		close(fd[i][0]);
+		close(fd[i][1]);
+		i++;
+	}
 }

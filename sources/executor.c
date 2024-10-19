@@ -1,87 +1,65 @@
 #include "minishell.h"
 
-static t_executor	init_executor(t_mini *ms)
+/*
+	If the first process with a builtin command where it modifies something
+	this will ensure that the changes are reflected in the parent process.
+	aka, if no change, just make child (hehe)
+*/
+int	exec_on_parent(t_mini *ms, int processes, char **cmd, int **fd)
 {
-	int			i;
-	t_executor	ex;
-
-	ex.pid = 0;
-	ex.status = 0;
-	ex.n_pros = 1;
-	ex.temp = ms -> token;
-	ex.cmd = token_to_array(ex.temp);
-	while (ex.temp)
-	{
-		if (ex.temp->type == PIPE)
-			ex.n_pros++;
-		ex.temp = ex.temp->next;
-	}
-	ex.fd = ft_calloc(ex.n_pros, sizeof(int *));
-	i = -1;
-	while (++i < (ex.n_pros - 1))
-		ex.fd[i] = ft_calloc(2, sizeof(int));
-	i = -1;
-	while (++i < (ex.n_pros - 1))
-		pipe(ex.fd[i]);
-	ex.temp = ms -> token;
-	return (ex);
-}
-
-static int	exec_on_parent(t_mini *ms, int n_pros, char **cmd, int **fd)
-{
-	if (n_pros > 1)
+	if (processes > 1)
 		return (-1);
 	if (ft_strncmp (*cmd, "echo", 4) == 0)
 		return (-1);
-	if (ft_strncmp (*cmd, "pwd", 3) == 0)
-		return (-1);
 	if (ft_strncmp (*cmd, "env", 3) == 0)
+		return (-1);
+	if (ft_strncmp (*cmd, "pwd", 3) == 0)
 		return (-1);
 	if (ft_strncmp (*cmd, "exit", 5) == 0)
 		fd = (int **) free_array((char **) fd);
 	if (!check_bltn(ms, cmd, &ms->env))
 		return (-1);
-	return (n_pros);
+	return (processes);
 }
 
-static void	exec_on_child(t_mini *ms, t_executor *ex, int i)
+void	exec_on_child(t_mini *ms, t_executor *exe, int i)
 {
-	ex->pid = malloc(sizeof(pid_t) * ex->n_pros);
-	while (++i < ex->n_pros)
+	exe->pid = malloc(sizeof(pid_t) * exe->processes);
+	while (++i < exe->processes)
 	{
 		if (i)
-			ex->cmd = token_to_array(ex->temp);
-		ex->pid[i] = fork();
-		if (ex->pid[i] == 0)
-			child(ms, ex->cmd, ex->fd, i);
-		while (ex->temp && ex->temp->type != PIPE)
-			ex->temp = ex->temp->next;
-		if (ex->temp && ex->temp->type == PIPE)
-			ex->temp = ex->temp->next;
-		ex->cmd = free_array(ex->cmd);
+			exe->cmd = token_to_array(exe->token);
+		exe->pid[i] = fork();
+		if (exe->pid[i] == 0)
+			child(ms, exe->cmd, exe->fd, i);
+		while (exe->token && exe->token->type != PIPE)
+			exe->token = exe->token->next;
+		if (exe->token && exe->token->type == PIPE)
+			exe->token = exe->token->next;
+		exe->cmd = free_array(exe->cmd);
 	}
 }
 
 void	ft_executor(t_mini *ms)
 {
 	int			i;
-	int			j;
-	t_executor	ex;
+	int			k;
+	t_executor	exe;
 
-	ex = init_executor(ms);
-	i = exec_on_parent(ms, ex.n_pros, ex.cmd, ex.fd);
-	if (i > 0)
-		ex.cmd = free_array(ex.cmd);
-	exec_on_child(ms, &ex, i);
-	close_fds(ex.fd);
-	j = -1;
-	while (ex.fd[++j])
-		ex.fd[j] = (int *) free_ptr((char *) ex.fd[j]);
-	ex.fd = (int **) free_array((char **) ex.fd);
-	j = -1;
-	while (++j < ex.n_pros)
-		waitpid(ex.pid[j], &ex.status, 0);
-	if (WIFEXITED(ex.status) && i != ex.n_pros)
-		ms->error = WEXITSTATUS(ex.status);
-	free(ex.pid);
+	exe = init_exec(ms);
+	i = exec_on_parent(ms, exe.processes, exe.cmd, exe.fd);
+	if (i)
+		exe.cmd = free_array(exe.cmd);
+	exec_on_child(ms, &exe, i);
+	close_fds(exe.fd);
+	k = -1;
+	while (exe.fd[++k])
+		exe.fd[k] = (int *) free_ptr((char *) exe.fd[k]);
+	exe.fd = (int **) free_array((char **) exe.fd);
+	k = -1;
+	while (++k < exe.processes)
+		waitpid(exe.pid[k], &exe.status, 0);
+	if (WIFEXITED(exe.status) && i != exe.processes)
+		ms->error = WEXITSTATUS(exe.status);
+	free(exe.pid);
 }

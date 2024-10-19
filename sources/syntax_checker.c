@@ -1,50 +1,50 @@
 #include "minishell.h"
 
-static int	check_next(t_mini *ms, t_token *token, int type)
+int	after_valid(t_mini *ms, t_token *token, int tokentype)
 {
-	if (type == PIPE && token->next && token->next->type == PIPE)
+	if (tokentype == PIPE && token->next && token->next->type == PIPE)
 	{
 		ft_printf("minishell: syntax error near unexpected token `%s'\n", \
 		token->next->cmd);
 		ms->error = 2;
-		return (2);
+		return (1);
 	}
-	else if ((type == REDIRECT && token->next == NULL) || \
-	(type == REDIRECT && (token->next->type == PIPE || \
+	else if ((tokentype == REDIRECT && token->next == NULL) || \
+	(tokentype == REDIRECT && (token->next->type == PIPE || \
 	token->next->type == REDIRECT || token->next->type == HEREDOC)))
 	{
 		ft_printf("minishell: syntax error near unexpected token `%s'\n", \
 		token->cmd);
 		ms->error = 2;
-		return (2);
+		return (1);
 	}
 	return (0);
 }
 
 int	ft_syntchecker(t_mini *ms)
 {
-	t_token	*temp;
+	t_token	*token;
 
-	temp = ms->token;
-	while (temp)
+	token = ms->token;
+	while (token)
 	{
-		if (temp->type == PIPE)
+		if (token->type == REDIRECT)
 		{
-			if (check_next(ms, temp, PIPE))
-				return (2);
+			if (after_valid(ms, token, REDIRECT))
+				return (1);
 		}
-		else if (temp->type == REDIRECT)
+		else if (token->type == PIPE)
 		{
-			if (check_next(ms, temp, REDIRECT))
-				return (2);
+			if (after_valid(ms, token, PIPE))
+				return (1);
 		}
-		else if (ft_strchr(temp->cmd, '\\'))
+		else if (ft_strchr(token->cmd, '\\'))
 		{
 			ft_printf("minishell: syntax error, token `\\' is not accepted\n");
 			ms->error = 2;
-			return (2);
+			return (1);
 		}
-		temp = temp->next;
+		token = token->next;
 	}
 	return (0);
 }

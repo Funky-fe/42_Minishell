@@ -49,7 +49,6 @@
 #include <stdio.h>
 
 # include "libft.h"
-# include "defines.h"
 # include "structs.h"
 # include "functions.h"
 

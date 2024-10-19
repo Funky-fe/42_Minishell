@@ -1,83 +1,29 @@
 #include "minishell.h"
 
-static void	insert_token(t_token **head, char *token)
+void	insert_token(t_token **top, char *cmd)
 {
-	t_token	*new;
-	t_token	*temp;
+	t_token	*tmp;
+	t_token	*token;
 
-	new = ft_calloc(1, sizeof(t_token));
-	new->cmd = ft_strdup(token);
-	new->type = 0;
-	new->prev = NULL;
-	new->next = NULL;
-	if (!*head)
+	token = init_token(cmd);
+	token->cmd = ft_strdup(cmd);
+	if (!*top)
 	{
-		*head = new;
+		*top = token;
 		return ;
 	}
-	temp = *head;
-	while (temp->next)
-		temp = temp->next;
-	new->prev = temp;
-	temp->next = new;
+	tmp = *top;
+	while (tmp->next)
+		tmp = tmp->next;
+	tmp->next = token;
+	token->prev = tmp;
 }
 
-static int	is_builtin(char *token)
-{
-	char	**list;
-	int		i;
-
-	list = ft_calloc(8, sizeof(char *));
-	if (!list)
-		return (-1);
-	list[0] = ft_strdup("echo");
-	list[1] = ft_strdup("cd");
-	list[2] = ft_strdup("pwd");
-	list[3] = ft_strdup("export");
-	list[4] = ft_strdup("unset");
-	list[5] = ft_strdup("env");
-	list[6] = ft_strdup("exit");
-	list[7] = NULL;
-	i = -1;
-	while (list[++i])
-	{
-		if (!ft_strncmp(token, list[i], ft_strlen(token)))
-		{
-			list = free_array(list);
-			return (1);
-		}
-	}
-	list = free_array(list);
-	return (0);
-}
-
-static char	**split_args(char *input)
-{
-	int		i;
-	int		quotes;
-	char	*temp;
-	char	**ret;
-
-	i = -1;
-	quotes = 0;
-	temp = NULL;
-	while (input[++i])
-	{
-		if (input[i] == ' ' && !quotes)
-			input[i] = SEP;
-		else if (input[i] == '\"' || input[i] == '\'')
-			quotes = check_quotes(input[i], quotes);
-	}
-	ret = ft_split(input, SEP);
-	temp = free_ptr(temp);
-	return (ret);
-}
-
-static void	define_type(t_token **head)
+void	insert_type(t_token **top)
 {
 	t_token	*token;
 
-	token = *head;
+	token = *top;
 	while (token)
 	{
 		if (!ft_strncmp(token->cmd, "|", ft_strlen(token->cmd)))
@@ -87,7 +33,7 @@ static void	define_type(t_token **head)
 			token->type = REDIRECT;
 		else if (!ft_strncmp(token->cmd, "<<", ft_strlen("<<")))
 			token->type = HEREDOC;
-		else if (is_builtin(token->cmd))
+		else if (builtin(token->cmd))
 			token->type = BUILTIN;
 		else if (!token->prev || token->prev->type == PIPE)
 			token->type = EXECVE;
@@ -99,7 +45,7 @@ static void	define_type(t_token **head)
 	}
 }
 
-int	ft_parser(t_token **head, char *str)
+int	ft_parser(t_token **top, char *str)
 {
 	char	**cmdlist;
 	char	**cmd;
@@ -109,7 +55,7 @@ int	ft_parser(t_token **head, char *str)
 	cmdlist = ft_lexer(str);
 	if (!cmdlist)
 	{
-		ft_putstr_fd("-minishell: parser: unclosed quotes\n", 2);
+		ft_printf("minishell: parser: unclosed quotes\n");
 		cmdlist = free_array(cmdlist);
 		return (1);
 	}
@@ -119,11 +65,11 @@ int	ft_parser(t_token **head, char *str)
 		j = -1;
 		cmd = split_args(cmdlist[i]);
 		while (cmd[++j])
-			insert_token(head, cmd[j]);
+			insert_token(top, cmd[j]);
 		cmd = free_array(cmd);
 	}
-	check_pipe (cmdlist[--i], head);
+	check_pipe (cmdlist[--i], top);
 	cmdlist = free_array(cmdlist);
-	define_type(head);
+	insert_type(top);
 	return (0);
 }

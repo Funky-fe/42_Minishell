@@ -1,55 +1,55 @@
 #include "minishell.h"
 
-// THIS WILL PUT A SEP BEFORE AND AFTER THE SIMBOLS >, < AND |
-static char	*filler(char *input, int pos)
+// THIS WILL PUT A SEP BEFORE AND AFTER THE SIMBOLS >, < AND | LIKE: "string SEP|SEP string"
+char	*ft_separator(char *cmd, int pos)
 {
-	char	*result;
 	int		i;
-	int		j;
+	int		k;
+	char	*result;
 
-	result = ft_calloc(ft_strlen(input) + 3, sizeof (char));
-	if (!result)
-		return (NULL);
+	k = -1;
 	i = -1;
-	j = -1;
-	while (++j < pos)
-		result[j] = input[++i];
+	result = ft_calloc(ft_strlen(cmd) + 3, sizeof (char));
+	if (!result)	
+		return (NULL);
+	while (++k < pos)
+		result[k] = cmd[++i];
 	i++;
-	result[j++] = SEP;
-	result[j++] = input[i++];
-	if (input[i] == input[i - 1] && input[i] != '|')
-		result[j++] = input[i++];
-	result[j++] = SEP;
-	while (input[i])
-		result[j++] = input[i++];
-	result[j] = '\0';
-	input = free_ptr(input);
+	result[k++] = SEP;
+	result[k++] = cmd[i++];
+	if (cmd[i] != '|' && cmd[i] == cmd[i - 1])
+		result[k++] = cmd[i++];
+	result[k++] = SEP;
+	while (cmd[i])
+		result[k++] = cmd[i++];
+	cmd = free_ptr(cmd);
+	result[k] = '\0';
 	return (result);
 }
 
 char	**ft_lexer(char *input)
 {
-	int		i;
-	int		quotes;
-	char	*temp;
+	char	*cmd;
 	char	**result;
+	int		i;
+	int		qts;
 
+	cmd = ft_strdup(input);
+	qts = 0;
 	i = -1;
-	quotes = 0;
-	temp = ft_strdup(input);
-	while (temp && temp[++i])
+	while (cmd && cmd[++i])
 	{
-		if ((temp[i] == '>' || temp[i] == '<' || temp[i] == '|' ) && !quotes)
+		if ((cmd[i] == '>' || cmd[i] == '<' || cmd[i] == '|' ) && !qts)
 		{
-			temp = filler(temp, i);
-			i =+ 2;
+			cmd = ft_separator(cmd, i);
+			i += 2;
 		}
-		else if (temp[i] == '\'' || temp[i] == '\"')
-			quotes = check_quotes(temp[i], quotes);
+		else if (cmd[i] == '\'' || cmd[i] == '\"')
+			qts = quote_handler(cmd[i], qts);
 	}
-	if (quotes)
-		temp = free_ptr(temp);
-	result = ft_split(temp, SEP);
-	temp = free_ptr(temp);
+	if (qts)
+		cmd = free_ptr(cmd);
+	result = ft_split(cmd, SEP);
+	cmd = free_ptr(cmd);
 	return (result);
 }
